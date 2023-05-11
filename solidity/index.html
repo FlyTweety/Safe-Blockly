@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html>
+  
+<head>
+  <meta charset="utf-8">
+  <title>Blockly Demo: Fixed Blockly</title>
+
+  <script src="./security/ast.js"></script>
+
+  <script src="../blockly/blockly_compressed.js"></script>
+  <script src="../blockly/blocks/variables.js"></script>
+  <script src="../blockly/blocks/math.js"></script>
+  <script src="../blockly/blocks/logic.js"></script>
+  <script src="../blockly/msg/js/en.js"></script>
+
+  <script src="./blocks/contract.js"></script>
+  <script src="./generators/solidity.js"></script>
+  <script src="./generators/solidity/contract.js"></script>
+  <script src="./generators/solidity/methods.js"></script>
+  <script src="./generators/solidity/logic.js"></script>
+  <script src="./generators/solidity/math.js"></script>
+
+  <style>
+    body {
+      background-color: #fff;
+      font-family: sans-serif;
+    }
+    h1 {
+      font-weight: normal;
+      font-size: 140%;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="blocklyDiv" style="height: 480px; width: 100%;"></div>
+
+  <xml id="toolbox" style="display: none">
+    <block type="contract_state"></block>
+    <block type="contract_state_get"></block>
+    <block type="contract_state_set"></block>
+    <block type="contract_method"></block>
+    <block type="contract_method_parameter"></block>
+    <block type="contract_method_parameter_get"></block>
+    <block type="contract_ctor"></block>
+    <block type="contract_method_call"></block>
+    <block type="math_number"></block>
+    <block type="math_arithmetic"></block>
+    <block type="logic_boolean"></block>
+    <block type="logic_compare"></block>
+    <block type="controls_ifelse"></block>
+    <block type="controls_if"></block>
+    <block type="contract_method"></block>
+    <block type="contract_method_parameter"></block>
+    <block type="contract_method_parameter_get"></block>
+    <block type="logic_operation"></block>
+    <block type="math_arithmetic"></block>
+    <block type="controls_for"></block>
+    <block type="require"></block>
+    <block type="contract_event_emit"></block>
+    <block type="contract_event"></block>
+    <block type="set_state_to_msg"></block>
+    <block type="transfer"></block>
+    <block type="map"></block>
+  </xml>
+
+  <!-- 这个是输出solidity的地方 -->
+  <textarea id="textarea" style="width:calc(34% - 10px);height:600px;float:right"></textarea>
+
+  <!-- 这个是我输出检查信息地方 -->
+  <textarea id="checkInfoArea" style="width:calc(34% - 10px);height:600px;float:right"></textarea>
+
+  <script>
+    //初始化workspace
+    var workspace = Blockly.inject(
+      'blocklyDiv',
+      {
+        media: '../blockly/media/',
+        toolbox: document.getElementById('toolbox'),
+        scrollbars: true,
+        zoom: {
+          controls: true
+        },
+        grid: {
+          spacing: 25,
+          length: 3,
+          colour: '#ccc',
+          snap: true
+        },
+      }
+    );
+
+    //两个不知道干什么用的函数
+    Blockly.Xml.domToWorkspace(
+      Blockly.Xml.textToDom(
+        '<xml><block type="contract" deletable="false" movable="false"></block></xml>'
+      ),
+      workspace
+    );
+    function setDisabledRec(block, disabled) {
+      block.setDisabled(disabled);
+      block.setMovable(true);
+
+      var children = block.getChildren();
+      for (var i = 0; i < children.length; i++) {
+        setDisabledRec(children[i], disabled);
+      }
+    }
+
+    //contractBlock就是合约块
+    var contractBlock = workspace.getTopBlocks()[0];
+
+    //有改动时都更新生成的代码
+    function myUpdateFunction(event) {
+
+      //重新生成代码也需要刷新语法树
+      ASTInfos = aNewAST();
+
+      var code = Blockly.Solidity.blockToCode(contractBlock);
+      var topBlocks = workspace.getAllBlocks();
+      for (var i = 0; i < topBlocks.length; ++i) {
+        var block = topBlocks[i];
+
+        document.getElementById('myLabel').innerHTML = document.getElementById('myLabel').innerHTML + i;
+
+        if (contractBlock == block) {
+          continue;
+        }
+        if (!block.getParent()) {
+          setDisabledRec(block, true);
+        } else if (block.getParent() == contractBlock) {
+          setDisabledRec(block, false);
+        }
+      }
+      document.getElementById('textarea').value = code;
+      //当workspace被改动时，执行myUpdateFunction
+      //这个被我改成绑定到下面的按钮了
+      //workspace.addChangeListener(myUpdateFunction);
+     }
+
+
+    
+
+  </script>
+
+  <button type="button" onclick = "myUpdateFunction()"> 点击生成solidity代码 </button>
+  <button type="button" onclick = "outputCheckInfoFunction()"> 点击输出检查信息 </button>
+  <break></break>
+  <button type="button" onclick = "checkUnusedVariablesFunction(ASTInfos)"> 检查未使用的变量 </button>
+  <button type="button" onclick = "checkComplierVersionFunction(ASTInfos)"> 检查编译器版本注意事项 </button>
+  <h id="myLabel">initial</h>
+
+</body>
+</html>
